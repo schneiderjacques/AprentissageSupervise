@@ -19,6 +19,7 @@ def lireMail(fichier, dictionnaire):
 def charge_dico(fichier):
 	f = open(fichier, "r")
 	mots = f.read().split("\n")
+	mots = [x for x in mots if len(x) >= 3] #4. Consigne, on ne garde que les mots de 3 lettres et plus
 	print("Chargé " + str(len(mots)) + " mots dans le dictionnaire")
 	f.close()
 	return mots[:-1]
@@ -63,8 +64,8 @@ def test(dossier, isSpam, Pspam, Pham, bspam, bham):
 
 ############ programme principal ############
 
-dossier_spams = "spam"	# à vérifier
-dossier_hams = "ham"
+dossier_spams = "./baseapp/spam" # à vérifier
+dossier_hams = "./basetest/ham"
 
 fichiersspams = os.listdir(dossier_spams)
 fichiershams = os.listdir(dossier_hams)
