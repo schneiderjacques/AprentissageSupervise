@@ -11,7 +11,10 @@ def lireMail(fichier, dictionnaire):
 	
 	x = [False] * len(dictionnaire) 
 
-	# à modifier...
+	# x[i] représente la presence du mot d'indice i du dictionnaire dans le message
+	for i, mot in enumerate(dictionnaire):
+		if mot in mots:
+			x[i] = True
 	
 	f.close()
 	return x
@@ -30,7 +33,13 @@ def apprendBinomial(dossier, fichiers, dictionnaire):
 	Retourne un vecteur b de paramètres 
 		
 	"""
-	b = 0	# à modifier...
+	freq = np.zeros_like(dictionnaire, dtype=np.int32) # compte / accu la présence des mots dans l'ensemble des mails spams (ou hams)
+	
+	for fichier in fichiers: 
+		v = lireMail("/".join([dossier, fichier]), dictionnaire) # vecteur présence mots
+		freq += np.array(v, dtype=np.int32) # cast booleen en int, si la valeur d'un indice est True, +1 dans freq
+
+	b = freq / len(fichiers)
 	return b
 
 
@@ -64,8 +73,8 @@ def test(dossier, isSpam, Pspam, Pham, bspam, bham):
 
 ############ programme principal ############
 
-dossier_spams = "./baseapp/spam" # à vérifier
-dossier_hams = "./basetest/ham"
+dossier_spams = "baseapp/spam" # à vérifier
+dossier_hams = "baseapp/ham"
 
 fichiersspams = os.listdir(dossier_spams)
 fichiershams = os.listdir(dossier_hams)
@@ -81,7 +90,7 @@ print(dictionnaire)
 print("apprentissage de bspam...")
 bspam = apprendBinomial(dossier_spams, fichiersspams, dictionnaire)
 print("apprentissage de bham...")
-bham = apprendBinomial(dossier_hams, fichiershams, dictionnaire)
+#bham = apprendBinomial(dossier_hams, fichiershams, dictionnaire)
 
 # Calcul des probabilités a priori Pspam et Pham:
 # Pspam = 
