@@ -90,12 +90,11 @@ print(dictionnaire)
 print("apprentissage de bspam...")
 bspam = apprendBinomial(dossier_spams, fichiersspams, dictionnaire)
 print("apprentissage de bham...")
-#bham = apprendBinomial(dossier_hams, fichiershams, dictionnaire)
+bham = apprendBinomial(dossier_hams, fichiershams, dictionnaire)
 
 # Calcul des probabilités a priori Pspam et Pham:
-# Pspam = 
-# Pham = 
-
+Pspam = mSpam / (mSpam + mHam)
+Pham = 1 - Pspam
 
 # Calcul des erreurs avec la fonction test():
 
