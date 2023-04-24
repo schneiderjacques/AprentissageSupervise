@@ -134,5 +134,5 @@ print("Erreur de test sur " + str(mSpam) + " SPAM    : " + str(erreur_spam*100) 
 print("Erreur de test sur " + str(mHam) + " HAM    : " + str(erreur_hams*100) + " %")
 
 erreur_globale = (erreur_spam * mSpam + erreur_hams * mHam) / (mSpam + mHam)
-print("Erreur de test globale sur " + str(mSpam + mHam) + " : " + str(round(erreur_globale*100)) + " %")
+print("Erreur de test globale sur " + str((mSpam + mHam)) + " : " + str(round(erreur_globale*100)) + " %")
 
