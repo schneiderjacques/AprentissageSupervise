@@ -61,9 +61,9 @@ def prediction(x, Pspam, Pham, bspam, bham):
     # bjHAM = nombre de HAM contenant le mot j / nombre de HAM
 
     # Calcul des probabilités a posteriori
-    # P(Y = SPAM | X = x) = (1 / P(X = x)) * P(Y = SPAM) * PRODUIT_PI de j = 1 à d de (bjSPAM)^x^j * (1 - bjSPAM)^(1 - x^j)
+
     proba_spam = Pspam * np.prod(np.power(bspam, x) * np.power(1 - bspam, 1 - x))
-    # P(Y = HAM | X = x) = (1 / P(X = x)) * P(Y = HAM) * PRODUIT_PI de j = 1 à d de (bjHAM)^x^j * (1 - bjHAM)^(1 - x^j)
+
     proba_ham = Pham * np.prod(np.power(bham, x) * np.power(1 - bham, 1 - x))
 
     # Retourne True (SPAM) si P(Y = SPAM | X = x) > P(Y = HAM | X = x), sinon retourne False (HAM)
