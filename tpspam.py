@@ -1,15 +1,25 @@
 import numpy as np
 import os
 import math
-
+from numpy import log1p
+import string
 
 def lireMail(fichier, dictionnaire):
     """
     Lire un fichier et retourner un vecteur de booléens en fonctions du dictionnaire
     """
-    f = open(fichier, "r", encoding="ascii", errors="surrogateescape")
-    mots = f.read().lower().split(" ")  # Conversion en minuscules pour une comparaison insensible à la casse
+    #Est insensible à la casse et aux accents
+    #Les mots de plus de 3 lettres sont pris en compte
+    #On enlève les mots qui finissent par des ponctuations on passe de 24% d'erreur à 22% d'erreur pour les spam
+    #En enlevant les \n et \r on passe de 22% à 18 pour les SPAM et de 2% à 1% pour les HAM
 
+    f = open(fichier, "r", encoding="ascii", errors="surrogateescape")
+    mots = f.read().lower()# Conversion en minuscules pour une comparaison insensible à la casse
+    mots = mots.replace('\n', ' ').replace('\r', ' ')
+    mots = mots.split(" ")
+
+    translator = str.maketrans("", "", string.punctuation)
+    mots = [mot.translate(translator) for mot in mots]
     x = [False] * len(dictionnaire)
 
     # x[i] représente la presence du mot d'indice i du dictionnaire dans le message
@@ -54,20 +64,34 @@ def prediction(x, Pspam, Pham, bspam, bham):
     à partir du modèle de paramètres Pspam, Pham, bspam, bham.
     Retourne True si c'est un spam, False sinon (c'est-à-dire un ham).
     """
+
+    #Après des recherches on peut réduire l'impact de l'imprécision numérique lors du calcul des probabilités a posteriori.
+    #En utilisant la fonction log1p qui calcule log(1+x) de manière plus précise pour les petits x.
+
+
     # Conversion du vecteur x en un array numpy pour faciliter les calculs
     x = np.array(x)
 
-    # bjSPAM = nombre de SPAM contenant le mot j / nombre de SPAM
-    # bjHAM = nombre de HAM contenant le mot j / nombre de HAM
+    # Calcul des logarithmes des probabilités a priori
+    log_Pspam = np.log(Pspam)
+    log_Pham = np.log(Pham)
 
-    # Calcul des probabilités a posteriori
+    # Calcul des logarithmes des rapports de vraisemblance pour chaque mot présent et absent
+    log_ratios_present = np.log((bspam) / (bham))
+    log_ratios_absent = np.log(((1 - bspam)) / ((1 - bham)))
 
-    proba_spam = Pspam * np.prod(np.power(bspam, x) * np.power(1 - bspam, 1 - x))
+    # Calcul du logarithme du rapport de probabilités a posteriori
+    log_ratio_posteriori = log_Pspam - log_Pham + np.sum(log_ratios_present * x) + np.sum(log_ratios_absent * (1 - x))
 
-    proba_ham = Pham * np.prod(np.power(bham, x) * np.power(1 - bham, 1 - x))
+    # Calcul des probabilités a posteriori P(Y=SPAM | X=x) et P(Y=HAM | X=x)
+    log1p_exp_ratio_diff = log1p(np.exp(-log_ratio_posteriori))
+    Pspam_x = 1 / (1 + np.exp(log1p_exp_ratio_diff))
+    Pham_x = 1 - Pspam_x
 
-    # Retourne True (SPAM) si P(Y = SPAM | X = x) > P(Y = HAM | X = x), sinon retourne False (HAM)
-    return proba_spam > proba_ham
+    isSpam = log_ratio_posteriori > 0
+
+    return isSpam, Pspam_x, Pham_x
+
 
 
 
@@ -76,10 +100,11 @@ def prediction(x, Pspam, Pham, bspam, bham):
 def test(dossier, isSpam, Pspam, Pham, bspam, bham):
     fichiers = os.listdir(dossier)
     nb_erreur = 0
-
+    indexSpam = 0
+    indexHam = 0
     for fichier in fichiers:  # On parcours chaque fichier du dossier
         x = lireMail(dossier + "/" + fichier, dictionnaire)  # On lit le fichier
-        isSpamPrediction = prediction(x, Pspam, Pham, bspam, bham)  # On fait une prediction
+        isSpamPrediction, Pspam_x, Pham_x = prediction(x, Pspam, Pham, bspam, bham)
         type_mail = "SPAM" if isSpam else "HAM"
 
         if (isSpam and not isSpamPrediction) or (not isSpam and isSpamPrediction):
@@ -90,7 +115,18 @@ def test(dossier, isSpam, Pspam, Pham, bspam, bham):
         else:
             erreur_msg = ""
         type_prediction = "SPAM" if isSpamPrediction else "HAM"
-        print(type_mail + " " + dossier + "/" + fichier + " identifié comme un " + type_prediction + " " + erreur_msg)
+        print(type_mail + " numéro ",end="")
+        if isSpam:
+            print(indexSpam ,end="")
+        else:
+            print(indexHam,end="")
+        print(" : P(Y=SPAM | X=x) = " + str(Pspam_x) + ", P(Y=HAM | X=x) = " + str(Pham_x))
+        print("    => identifié comme un " + type_prediction + " " + erreur_msg)
+        if isSpam:
+            indexSpam += 1
+        else:
+            indexHam += 1
+
 
     taux_erreur = nb_erreur / len(fichiers)
     return taux_erreur
