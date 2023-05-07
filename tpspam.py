@@ -30,7 +30,7 @@ def lireMail(fichier, dictionnaire):
             x[i] = True
 
     f.close()
-    return x
+    return np.array(x, dtype=np.int32)
 
 
 def charge_dico(fichier):
@@ -51,10 +51,9 @@ def apprendBinomial(dossier, fichiers, dictionnaire):
 
     for fichier in fichiers:
         v = lireMail("/".join([dossier, fichier]), dictionnaire)
-        freq += np.array(v, dtype=np.int32)
+        freq += v
 
     # Appliquer le lissage
-    e = 1
     b = (freq + e) / (len(fichiers) + e * 2)
 
     return b
@@ -123,6 +122,7 @@ def test(dossier, isSpam, Pspam, Pham, bspam, bham):
             indexSpam += 1
         else:
             indexHam += 1
+    print("\n")
 
     taux_erreur = nb_erreur / len(fichiers)
     return taux_erreur
@@ -158,6 +158,7 @@ def testClassifieur(dossier, classifieur, isSpam):
             indexSpam += 1
         else:
             indexHam += 1
+    print("\n")
 
     taux_erreur = nb_erreur / len(fichiers)
     return taux_erreur
@@ -175,7 +176,29 @@ def chargeClassifieur(nom):  # charge le classifieur depuis un fichier avec son 
     except FileNotFoundError:
         print("Le fichier " + nom + ".pkl n'a pas été trouvé.")
         return None
+    
+def miseAJourClassifieur(classifieur, message, isSpam):
+    x = lireMail(message, classifieur["dictionnaire"])
 
+    if isSpam:
+        bspam = classifieur["bspam"]
+        mSpam = classifieur["mSpam"]
+
+        # On récupère la valeur de njspam de l'ancien appretissage grâce à la formule 
+        nSpam = (bspam * (mSpam + 2*e)) - e 
+        bspam = (nSpam + x + e) / (mSpam + 1 + 2*e)
+
+        classifieur["bspam"] = bspam
+        classifieur["mSpam"] += 1
+    else:
+        bham = classifieur["bham"]
+        mHam = classifieur["mHam"]
+
+        nHam = (bham * (mHam + 2*e)) - e 
+        bham = (nHam + x + e) / (mHam + 1 + 2*e)
+
+        classifieur["bham"] = bham
+        classifieur["mHam"] += 1
 
 ############ programme principal ############
 
@@ -190,6 +213,8 @@ fichiershams = os.listdir(dossier_hams)
 
 mSpam = 300  # len(fichiersspams)
 mHam = 300  # len(fichiershams)
+
+e = 1
 
 # Chargement du dictionnaire:
 dictionnaire = charge_dico("dictionnaire1000en.txt")
@@ -249,3 +274,13 @@ print("[Amelioration] Erreur de test sur " + str(mSpam) + " SPAM    : " + str(ro
 print("[Amelioration] Erreur de test sur " + str(mHam) + " HAM    : " + str(round(erreur_hams * 100)) + " %")
 erreur_globale = (erreur_spam * mSpam + erreur_hams * mHam) / (mSpam + mHam)
 print("[Amelioration] Erreur de test globale sur " + str((mSpam + mHam)) + " : " + str(round(erreur_globale * 100)) + " %")
+print("\n")
+
+
+print(f"Données classifieur AVANT mise à jour: \n \
+      mSpam = {classifieur['mSpam']} \n \
+      mHam = {classifieur['mHam']} \n")
+miseAJourClassifieur(classifieur, "baseapp/spam/499.txt", True)
+print(f"Données classifieur APRES mise à jour: \n \
+      mSpam = {classifieur['mSpam']} \n \
+      mHam = {classifieur['mHam']} \n")
